@@ -58,7 +58,7 @@ void init_arrays(){
 }
 
 void print_usage(void){
-	fprintf(stderr,"Usage: masks -n <packet_num>\n\n"
+	fprintf(stderr,"Usage: masks -n <million_of_packet_num>\n\n"
 	       );
 	exit(EXIT_FAILURE);
 }
@@ -78,7 +78,7 @@ void set_opt( int argc, char **argv){
 		switch (opt) {
 			case 'n':
 				DEBUG_TRACE(("DEBUG: Options [n] [%s]\n", optarg));
-				count = atol(optarg);
+				count = atol(optarg)*1000000;
 				if ( count < 0 ){
 				  fprintf(stderr, "ERR: Number less than zero!\n");
 				  exit(EXIT_FAILURE);
@@ -92,12 +92,16 @@ void set_opt( int argc, char **argv){
 
 void prepare_flags(){
   
+	fprintf(stderr, "Begin randomization\n");
+	
 	srandom ( time(NULL) + getpid() );
 	
 	long i;
 	for (i = 0; i<count; i++){
 		flags[i] = random();
 	}
+	
+	fprintf(stderr, "End randomization\n");
 }
 
 int main(int argc, char **argv){
@@ -110,8 +114,10 @@ int main(int argc, char **argv){
 	
 	int n;
 	
+	fprintf(stderr, "Begin calculation\n");
 	for (n = 0; n < count; n++){
 	  uint16_t flag = flags[n];
+	  /* in for loop calculation (very slow)
 	    (flag & 0x8000 ? counters[0]++ : 0);
 	    (flag & 0x4000 ? counters[1]++ : 0);
 	    (flag & 0x2000 ? counters[2]++ : 0);
@@ -128,9 +134,37 @@ int main(int argc, char **argv){
 	    (flag & 0x0004 ? counters[13]++ : 0);
 	    (flag & 0x0002 ? counters[14]++ : 0);
 	    (flag & 0x0001 ? counters[15]++ : 0);
-	    
+	    */
+	  /* simple shift (fast)*/
+	  counters[0] += (flag & 0x8000) >> 15;
+	  counters[1] += (flag & 0x4000) >> 14;
+	  counters[2] += (flag & 0x2000) >> 13;
+	  counters[3] += (flag & 0x1000) >> 12;
+	  counters[4] += (flag & 0x0800) >> 11;
+	  counters[5] += (flag & 0x0400) >> 10;
+	  counters[6] += (flag & 0x0200) >> 9;
+	  counters[7] += (flag & 0x0100) >> 8;
+	  counters[8] += (flag & 0x0080) >> 7;
+	  counters[9] += (flag & 0x0040) >> 6;
+	  counters[10] += (flag & 0x0020) >> 5;
+	  counters[13] += (flag & 0x0010) >> 4;
+	  counters[11] += (flag & 0x0008) >> 3;
+	  counters[12] += (flag & 0x0004) >> 2;
+	  counters[14] += (flag & 0x0002) >> 1;
+	  counters[15] += (flag & 0x0001);
+          
+	  
+	  /*   shift in loops (slow)
+	  int k;
+	  int shift = 1;
+	  for (k = 0; k<16; k++){
+	    counters[k] += (flag & (shift << (15-k))) >> (15-k) ;
+	  }
+	    */
+  
 	  DEBUG_TRACE(("DEBUG: FLAG[%d] = [%04X]\n", n, flag));
 	}
+	fprintf(stderr, "End calculation\n");
 	
     #ifdef DEBUG
 	int i;
@@ -150,6 +184,7 @@ int main(int argc, char **argv){
 	  }
 	  DEBUG_TRACE(("\n\n"));
     #endif
+	  
 	int c;
 	for (c=0; c<16; c++){
 	  printf("Counter(%02d) = %08d\n", c+1, counters[c]);
