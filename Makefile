@@ -11,7 +11,7 @@ debug: CC += -DDEBUG
 debug:	$(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -O3 -o $@ $^ $(LIBS)
 
 $(TARGET).o: Makefile
 
